@@ -70,8 +70,8 @@ jobs:
     steps:
       - name: Install Trivy
         run: |
-          wget https://github.com/aquasecurity/trivy/releases/download/v0.52.2/trivy_0.52.2_Linux-64bit.rpm
-          sudo rpm -ivh trivy_0.52.2_Linux-64bit.rpm
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+
       - name: Trivy FS Scan
         run: trivy fs --format table -o fs-report.json .
   docker-build:
