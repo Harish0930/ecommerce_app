@@ -11,9 +11,7 @@ jobs:
               with:
                 distribution: temurin
                 java-version: 17
-                cache: maven
-            
-            - run: sudo yum install maven -y
+                cache: maven            
 
             - run: mvn -B clean package
 
