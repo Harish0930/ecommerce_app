@@ -42,60 +42,12 @@ jobs:
           --upload-file "$WAR" \
           "${TOMCAT_URL}/manager/text/deploy?path=/ecommerce-app&update=true"
 
-  docker-install:
-    name: Install Docker
-    runs-on: self-hosted
 
-    steps:
-      - name: Install Docker
-        run: |
-          sudo yum update -y
-          sudo yum install docker -y
 
-      - name: Start Docker
-        run: |
-          sudo systemctl start docker
-          sudo systemctl enable docker
-
-      - name: Add User To Docker Group
-        run: |
-          sudo usermod -aG docker ec2-user
-
-      - name: Verify Docker
-        run: docker --version
-
-  sonarqube-install:
-    name: Run SonarQube Container
-    runs-on: self-hosted
-    needs: docker-install
-
-    steps:
-      - name: Start SonarQube Container
-        run: |
-          sudo docker rm -f sonarqube || true
-
-          sudo docker run -d \
-            --name sonarqube \
-            -p 9000:9000 \
-            sonarqube:lts-community
-
-      - name: Wait for SonarQube
-        run: |
-          echo "Waiting for SonarQube to start..."
-          sleep 60
-
-      - name: Display SonarQube URL
-        run: |
-          PUBLIC_IP=$(curl -s http://checkip.amazonaws.com)
-
-          echo "======================================="
-          echo "SonarQube URL:"
-          echo "http://$PUBLIC_IP:9000"
-          echo "======================================="
     
   sonarqube:
     runs-on: self-hosted
-    needs: [build, docker-install,sonarqube-install]
+    needs: [build]
     steps:
       - name: Sonarbue report
         run: mvn sonar:sonar
