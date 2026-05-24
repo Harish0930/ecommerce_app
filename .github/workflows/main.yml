@@ -1,32 +1,94 @@
-name: simple build and deploy
+name: Build Deploy and SonarQube
+
 on:
-    workflow_dispatch:
+  workflow_dispatch:
+
 jobs:
-    full:
-        runs-on: self-runner #self-runner
-        steps:
-            - uses: actions/checkout@v4
-            
-            - uses: actions/setup-java@v4
-              with:
-                distribution: temurin
-                java-version: 17
-                cache: maven            
-            - run: sudo yum install maven -y
-            - run: mvn -B clean package
 
-            - name: Deploy WAR to tomcat
-              env: 
-                TOMCAT_URL: ${{secrets.TOMACT_URL}}
-                TOMCAT_USER: ${{secrets.TOMCAT_USER}}
-                TOMCAT_PASSWORD: ${{secrets.TOMCAT_PASSWORD}}
-              run: |
-                    WAR=$(ls target/*.war | head -n 1)
+  full:
+    name: Build and Deploy
+    runs-on: self-hosted
 
-                    echo "WAR FILE: $WAR"
-                    echo "Deploying to: $TOMCAT_URL"
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-                    curl -v -u "${TOMCAT_USER}:${TOMCAT_PASSWORD}" \
-                    --upload-file "$WAR" \
-                    "${TOMCAT_URL}/manager/text/deploy?path=/ecommerce-app&update=true"       
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
 
+      - name: Install Maven
+        run: sudo yum install maven -y
+
+      - name: Build WAR
+        run: mvn -B clean package
+
+      - name: Deploy WAR to Tomcat
+        env:
+          TOMCAT_URL: ${{ secrets.TOMCAT_URL }}
+          TOMCAT_USER: ${{ secrets.TOMCAT_USER }}
+          TOMCAT_PASSWORD: ${{ secrets.TOMCAT_PASSWORD }}
+
+        run: |
+          WAR=$(ls target/*.war | head -n 1)
+
+          echo "WAR FILE: $WAR"
+          echo "Deploying to: $TOMCAT_URL"
+
+          curl -v -u "${TOMCAT_USER}:${TOMCAT_PASSWORD}" \
+          --upload-file "$WAR" \
+          "${TOMCAT_URL}/manager/text/deploy?path=/ecommerce-app&update=true"
+
+  docker-install:
+    name: Install Docker
+    runs-on: self-hosted
+
+    steps:
+      - name: Install Docker
+        run: |
+          sudo yum update -y
+          sudo yum install docker -y
+
+      - name: Start Docker
+        run: |
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+      - name: Add User To Docker Group
+        run: |
+          sudo usermod -aG docker ec2-user
+
+      - name: Verify Docker
+        run: docker --version
+
+  sonarqube:
+    name: Run SonarQube Container
+    runs-on: self-hosted
+    needs: docker-install
+
+    steps:
+      - name: Start SonarQube Container
+        run: |
+          docker rm -f sonarqube || true
+
+          docker run -d \
+            --name sonarqube \
+            -p 9000:9000 \
+            sonarqube:lts-community
+
+      - name: Wait for SonarQube
+        run: |
+          echo "Waiting for SonarQube to start..."
+          sleep 60
+
+      - name: Display SonarQube URL
+        run: |
+          PUBLIC_IP=$(curl -s http://checkip.amazonaws.com)
+
+          echo "======================================="
+          echo "SonarQube URL:"
+          echo "http://$PUBLIC_IP:9000"
+          echo "======================================="
