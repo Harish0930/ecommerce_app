@@ -5,7 +5,7 @@ on:
 
 jobs:
 
-  full:
+  build:
     name: Build and Deploy
     runs-on: self-hosted
 
@@ -64,7 +64,7 @@ jobs:
       - name: Verify Docker
         run: docker --version
 
-  sonarqube:
+  sonarqube-install:
     name: Run SonarQube Container
     runs-on: self-hosted
     needs: docker-install
@@ -92,3 +92,10 @@ jobs:
           echo "SonarQube URL:"
           echo "http://$PUBLIC_IP:9000"
           echo "======================================="
+    
+  sonarqube:
+    runs-on: self-hosted
+    needs: [build, docker-install,sonarqube-install]
+    steps:
+      - name: Sonarbue report
+        run: mvn sonar:sonar
