@@ -64,3 +64,26 @@ jobs:
           -Dsonar.projectKey=ecommerce-app \
           -Dsonar.host.url=$SONAR_HOST_URL \
           -Dsonar.login=$SONAR_TOKEN
+  security-check:
+    runs-on: self-hosted
+    needs: sonarqube
+    steps:
+      - name: Install Trivy
+        run: |
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.67.2/trivy_0.67.2_Linux-64bit.deb
+          sudo dpkg -i trivy_0.67.2_Linux-64bit.deb
+      - name: Trivy FS Scan
+        run: trivy fs --format table -o fs-report.json .
+  docker-build:
+    runs-on: self-hosted
+    needs: security-check
+    steps:
+      - name: Build Docker Image
+        run: |
+          docker build -t ${{secrets.Docker_Repository}}:${{github.sha}} .
+      - name: Run Docker Container
+        run: |
+          docker run -d \
+           --name my_app_container \
+           -p 8080:8080 \
+           ${{secrets.Docker_Repository}}:${{github.sha}} 
