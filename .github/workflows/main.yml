@@ -46,8 +46,21 @@ jobs:
 
     
   sonarqube:
+    name: SonarQube Analysis
     runs-on: self-hosted
-    needs: [build]
+    needs: build
+
     steps:
-      - name: Sonarbue report
-        run: mvn sonar:sonar
+      - name: Clear Sonar Cache
+        run: rm -rf ~/.sonar/cache
+
+      - name: Run SonarQube Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+        run: |
+          mvn sonar:sonar \
+          -Dsonar.projectKey=ecommerce-app \
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.login=$SONAR_TOKEN
