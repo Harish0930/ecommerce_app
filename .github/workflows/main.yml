@@ -72,9 +72,9 @@ jobs:
     steps:
       - name: Start SonarQube Container
         run: |
-          docker rm -f sonarqube || true
+          sudo docker rm -f sonarqube || true
 
-          docker run -d \
+          sudo docker run -d \
             --name sonarqube \
             -p 9000:9000 \
             sonarqube:lts-community
