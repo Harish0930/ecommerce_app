@@ -21,7 +21,12 @@ jobs:
                 TOMCAT_USER: ${{secrets.TOMCAT_USER}}
                 TOMCAT_PASSWORD: ${{secrets.TOMCAT_PASSWORD}}
               run: |
-                WAR=$(ls target/*.war | head -n 1)
-                curl -sS -u "${TOMCAT_USER}:${TOMCAT_PASS}" --upload-file "$WAR" "${TOMCAT_URL}/manager/text/deploy?path=/ecommerce-app&update=true"
-       
+                    WAR=$(ls target/*.war | head -n 1)
+
+                    echo "WAR FILE: $WAR"
+                    echo "Deploying to: $TOMCAT_URL"
+
+                    curl -v -u "${TOMCAT_USER}:${TOMCAT_PASSWORD}" \
+                    --upload-file "$WAR" \
+                    "${TOMCAT_URL}/manager/text/deploy?path=/ecommerce-app&update=true"       
 
